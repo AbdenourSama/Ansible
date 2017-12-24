@@ -1,3 +1,5 @@
-This is a small ansible playbook to upgrade bash in Debian and RedHat based systems.
- 
- the purpose behind this playbook is to patch BASH against "Shellshock" Vulnerability.
+Here you can find here a list of use cases i have implemented using Ansible.
+
+Hope you can find it usefull, if you have any comments please feel free to contact me.
+
+Kind Regards.
