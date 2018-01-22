@@ -1,1 +1,3 @@
-This Playbook deploys Nginx web server with php-fpm and a server block for a domain
+This Playbook deploys Nginx web server with php-fpm and a server block for a domain.
+
+Note: Rename the Template domain.conf.j2 to match your domain name.
