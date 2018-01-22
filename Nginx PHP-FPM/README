@@ -1,0 +1,1 @@
+This Playbook deploys Nginx web server with php-fpm and a server block for a domain
