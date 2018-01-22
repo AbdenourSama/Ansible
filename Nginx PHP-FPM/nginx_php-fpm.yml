@@ -1,0 +1,112 @@
+- hosts: cent1
+  user: ansible
+  become: yes
+  become_user: root
+  connection: ssh
+  gather_facts: yes
+  vars:
+     - domain: "trdomain.com"
+     #- port: 80
+
+  tasks:
+     - name: install epel-release
+       yum: name=epel-release state=latest
+     
+     - name: Install Nginx
+       yum: name=nginx state=latest
+       notify: EnableNginx
+     
+     - name: Install php-fpm and php-cli
+       yum: name={{ item }} state=latest
+       with_items:
+           - php-fpm
+           - php-cli
+       notify:
+           - EnablePhpFpm
+           - RestartPhpFpm 
+
+     - name: Configure firewalld for Nginx (Enable http and https connections)
+       firewalld: service="{{ item }}" permanent=true state=enabled zone=public
+       with_items:
+          - http
+          - https
+       notify:  FirewalldReload
+     
+     - name: Configure SELinux
+       command: semanage permissive -a httpd_t
+
+     - name: configure /etc/php-fpm.d/www.conf
+       lineinfile: 
+             path: /etc/php-fpm.d/www.conf 
+             line: listen = /var/run/php-fpm/php-fpm.sock
+             insertafter: listen = 127.0.0.1:9000
+
+     - name: change permissions 1
+       lineinfile: path='/etc/php-fpm.d/www.conf' insertafter=';listen.owner = nobody' line='listen.owner = nginx'
+       
+     - name: change permissions 1.5
+       lineinfile: path='/etc/php-fpm.d/www.conf' line='listen.group = nginx' insertafter=';listen.group = nobody'      
+    
+     - name: Change permissions 2
+       lineinfile:
+             path: /etc/php-fpm.d/www.conf
+             regexp: '^user = apache'
+             line: user = nginx
+
+     - name: Change permissions 3
+       lineinfile:
+             path: /etc/php-fpm.d/www.conf
+             regexp: '^group = apache'
+             line: group = nginx
+             
+     - name: create Document root for the domain
+       file: path=/var/www/{{ domain }}/html state=directory owner=nginx group=nginx mode=0755  recurse=yes
+
+     - name: Create config directories
+       file: path={{ item }} state=directory
+       with_items:
+           - /etc/nginx/sites-available
+           - /etc/nginx/sites-enabled 
+       register: dir_create
+
+     - name: include new config into nginx
+       lineinfile: path='/etc/nginx/nginx.conf' line='include /etc/nginx/sites-enabled/*.conf;' insertafter='http {'
+       register: dir_include
+
+     - name: Create conf file for the domain
+       template: src={{ domain }}.conf.j2 dest=/etc/nginx/sites-available/{{ domain }}.conf
+       register: create_conf
+     
+     - name: Create Sym link for the domain
+       file: src=/etc/nginx/sites-available/{{ domain }}.conf dest=/etc/nginx/sites-enabled/{{ domain }}.conf state=link
+       register: create_link
+        
+     - name: restart Nginx and php-fpm
+       service: name=nginx state=restarted
+       when: dir_create.changed and dir_include.changed and create_conf.changed and create_link.changed
+       notify: RestartPhpFpm
+
+     - name: Create html  test pages
+       template: src=index.html.j2 dest=/var/www/{{ domain }}/html/index.html mode=0775 owner=nginx
+
+     - name: Create php  test pages
+       template: src=index.php.j2 dest=/var/www/{{ domain }}/html/index.php mode=0775  owner=nginx
+   
+     - name: Change log files permissions
+       file: path=/var/log/nginx/{{ item }} owner=nginx
+       with_items:
+           - access.log
+           - error.log
+
+  handlers:
+     - name: FirewalldReload
+       service: name=firewalld state=reloaded
+      
+     - name: EnableNginx
+       service: name=nginx enabled=yes
+
+     - name: EnablePhpFpm
+       service: name=php-fpm enabled=yes  
+
+     - name: RestartPhpFpm
+       service: name=php-fpm state=restarted 
