@@ -1,0 +1,62 @@
+- hosts: all
+  become: yes
+  become_user : root
+  gather_facts : yes
+
+
+  tasks:
+     - name: Get disk usage
+       command: df -h
+       register: df_output
+
+     - name: Checking Memory Usage
+       command: free
+
+     - name: Checking Swap Space Usage
+       command: free
+
+     - name: Checking CPU Load
+       shell: top -bn1 | grep load | awk '{printf "%.2f\n", $(NF-2)}'
+       register: cpu_load
+
+     - name: Checking Running services
+       shell: systemctl list-units --type=service --state=running | grep running
+       register: running_services
+
+     - name: Checking SELinux
+       command: sestatus
+       register: selinux_status
+
+     - name: Checking Network Status
+       service: name=network state=started
+       register: status_output
+       ignore_errors: yes
+
+     - name: Checking Interfaces Status
+       debug:
+         msg: "{{ hostvars[inventory_hostname]['ansible_%s' | format(item) |replace('-','_')] }}"
+       with_items: "{{ ansible_interfaces }}"
+       register: interfaces_facts
+       ignore_errors: yes
+
+     - name: Checking Open Ports
+       command: netstat -antpd
+       register: open_ports
+
+     
+     - name: Checking DNS Resolution
+       command: nslookup google.com
+       register: lookup
+       ignore_errors: yes
+
+     - name: Checking Routing Table
+       command: ip route show
+       register: route_table
+
+     - name: Checking Iptable Rules
+       command: iptables -L
+       register: iptable_rules
+
+     - name: Generating The Report
+       template: src=./get_report.j2  dest=./Final_Report.txt
+       delegate_to: localhost
