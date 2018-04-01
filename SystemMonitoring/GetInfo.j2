@@ -1,0 +1,84 @@
+{% for machine in play_hosts %}
+-------------------- {{ machine }} --------------------------
+### Disk Usage Status ###
+
+ {% for line in  hostvars[machine].df_output.stdout_lines %}
+   {{ line }}
+ {% endfor %}
+
+### Memery Usage Status ###
+ Total Memory : {{ hostvars[machine].ansible_memory_mb.real.total }} MB
+ Used Memory  : {{ hostvars[machine].ansible_memory_mb.real.used }} MB
+ Free Memory  : {{ hostvars[machine].ansible_memory_mb.real.free }} MB
+
+### Swap Space Usage Satus ###
+ Total Swap: {{ hostvars[machine].ansible_memory_mb.swap.total }} MB
+ Used Swap : {{ hostvars[machine].ansible_memory_mb.swap.used }} MB
+ Free Swap : {{ hostvars[machine].ansible_memory_mb.swap.free }} MB
+ Cached    : {{ hostvars[machine].ansible_memory_mb.swap.cached }} MB
+
+### CPU Load ###
+CPU Load : {{ hostvars[inventory_hostname].cpu_load.stdout }}
+
+### Running Servcies
+
+ {% for line in  hostvars[machine].running_services.stdout_lines %}
+  {{ line }}
+ {% endfor %}
+
+### SELinux
+  {% for line in  hostvars[machine].selinux_status.stdout_lines %}
+     {{ line }}
+  {% endfor %}
+
+### Network Service Status ###
+{% if  status_output.state == 'started' %}
+Network service is running
+{% else %}
+Network service is NOT running
+{% endif %}
+
+### Network Interfaces Status ###
+
+{% for int in hostvars[inventory_hostname].interfaces_facts.results %}
+Interface : {{ int.item }}
+    - Is Active : {{ int.msg.active }}
+    - Int Type  : {{ int.msg.type }}
+{% if int.msg.ipv4 is defined %}
+    - IP Address: {{ int.msg.ipv4.address }}
+    - Net Mask  : {{ int.msg.ipv4.netmask }}
+{% else %}
+    - IP Address is not set
+{% endif %}
+
+{% endfor %}
+
+### List Of Open Ports ###
+{% for line in hostvars[inventory_hostname].open_ports.stdout_lines %}
+{{ line }}
+{% endfor %}
+
+### DNS Information ###
+- Configured DNS servers are:
+{% for server in hostvars[inventory_hostname].ansible_dns.nameservers %}
+   - {{ server }}
+{% endfor %}
+
+## DNS Resolution ###
+{% if hostvars[inventory_hostname].lookup.rc == 0 %}
+DNS resolution is working correctly.
+{% else %}
+DNS Resolution is NOT working.
+{% endif %}
+
+## Routing Table ##
+{% for line in hostvars[inventory_hostname].route_table.stdout_lines %}
+{{ line }}
+{% endfor %}
+
+## Listing IpTable rules
+{% for line in hostvars[inventory_hostname].iptable_rules.stdout_lines %}
+{{ line }}
+{% endfor %}
+
+{% endfor %}
