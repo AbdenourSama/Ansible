@@ -1,0 +1,22 @@
+This is a simple ansible playbook that collects some information from the system adn create a small report from it.
+
+- The Script contains two files "get_report.yml" and "get_report.j2"
+- The result of those scripts will be txt file with the name "Final_Report.txt"
+- To execute the script use the following command:
+     - ansible-playbook get_report.yml
+
+- the output file contains the following information:
+    - Disk usage
+    - Real Memory usage
+    - Swap space Usage
+    - CPU Load
+    - Running services
+    - SELinux status and configuration
+    - Network Service status
+    - Nework interfaces status and configuartion
+    - Open Ports 
+    - DNS system Configuration
+    - DNS system status
+    - Routing table
+    - Firewall Rules
+
