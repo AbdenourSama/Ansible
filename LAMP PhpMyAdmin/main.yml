@@ -1,0 +1,10 @@
+- hosts: debian
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - role: common
+    - role: apache
+    - role: mysql
+    - role: php
+    - role: phpmyadmin
