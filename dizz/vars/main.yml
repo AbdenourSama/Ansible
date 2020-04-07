@@ -1,0 +1,9 @@
+---
+# vars file for dizz
+project: dizz 
+zip_file: dizz.zip
+domain: dizz.local
+db_name: dizz
+db_user: root
+db_pass: P@ssworD
+admin_mail: root@localhost
