@@ -1,0 +1,52 @@
+---
+# tasks file for dizz
+
+- name: Copying the project zip into the target system
+  copy:
+    src: "{{ zip_file }}"
+    dest: /tmp/{{ zip_file }}
+
+- name: Unzipping the project file
+  unarchive:
+    src: /tmp/{{ zip_file }}
+    dest: /tmp
+    remote_src: yes
+
+- name: Moving the app to DocumentRoot
+  unarchive:
+    src: /tmp/installable_file/dizzcox-v2.0.zip
+    dest: /var/www/{{ project }}
+    remote_src: yes
+
+- name: Changing Files permissions
+  file:
+    path: /var/www/{{ project }}
+    owner: apache
+    group: apache
+    recurse: yes
+
+- name: Import the database 
+  mysql_db:
+    state: import
+    name: "{{ db_name}}" 
+    target: /var/www/{{ project }}/install/database.sql
+
+- name: Changing admin mail
+  shell:  mysql -e "UPDATE admins SET email='{{ admin_mail }}' WHERE username='super_admin'"  {{ db_name }} 
+- name: Removing installation script
+  file:
+    path: /var/www/{{ project }}/install
+    state: absent
+
+- name: configuring the app
+  template:
+    src: env.j2
+    dest: /var/www/{{ project }}/@core/.env
+
+- name: changing envirenment file permissions
+  file:
+    path: /var/www/{{ project }}/@core/.env
+    owner: apache
+    group: apache
+    mode: 0644
+
