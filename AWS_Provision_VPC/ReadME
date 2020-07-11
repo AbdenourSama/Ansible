@@ -1,2 +1,7 @@
-This will provision a VPC with the following content:
-- 
+This will provision a VPC with the following steps:
+- Create a VPC
+- Create a Internet Gateway and associate it to the VPC
+- Create a public subnet
+- SetUp public Subnet route table
+- Create a Security Group to allow SSH Access
+- Provision an EC2 Instance
