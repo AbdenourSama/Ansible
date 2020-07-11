@@ -3,8 +3,8 @@
   gather_facts: False
 
   vars:
-    - ec2_access_key: AKIAY2JBUEYMU4FXN3Z3
-    - ec2_secret_key: 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
+    - ec2_access_key: AKIAY2DFEWEDSCSXSWXS
+    - ec2_secret_key: 02okRJWSDADADAdlh60oWE94dMJeDSDSDKJWDKJWDFD
     - region: us-east-1 
 
 
