@@ -1,0 +1,86 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+
+  vars:
+    - ec2_access_key: AKIAY2JBUEYMU4FXN3Z3
+    - ec2_secret_key: 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
+    - region: us-east-1 
+
+
+  tasks:
+    - name: Create the VPC
+      ec2_vpc_net:
+        name: ansible_vpc
+        cidr_block: 10.1.0.0/16
+        region: "{{ region }}"
+        aws_access_key: "{{ ec2_access_key }}"
+        aws_secret_key: "{{ ec2_secret_key }}"
+      register: ansible_vpc
+
+    - name: Create Internet GW and associate it to the VPC
+      ec2_vpc_igw:
+         vpc_id: "{{ ansible_vpc.vpc.id }}"
+         region: "{{ region }}"
+         aws_access_key: "{{ ec2_access_key }}"
+         aws_secret_key: "{{ ec2_secret_key }}"
+         state: present
+      register: ansible_igw
+
+    - name: Create a subnet in the VPC
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ ansible_vpc.vpc.id }}"
+        cidr: 10.1.1.0/24
+        region: "{{ region }}"
+        aws_access_key: "{{ ec2_access_key }}"
+        aws_secret_key: "{{ ec2_secret_key }}" 
+        wait: no
+      register: ansible_subnet
+   
+    - name: Set up public subnet route table
+      ec2_vpc_route_table:
+         vpc_id: "{{ ansible_vpc.vpc.id }}"
+         region: "{{ region }}"
+         aws_access_key: "{{ ec2_access_key }}"
+         aws_secret_key: "{{ ec2_secret_key }}" 
+         subnets:
+             - "{{ ansible_subnet.subnet.id }}"  
+         routes:
+           - dest: 0.0.0.0/0
+             gateway_id: "{{ ansible_igw.gateway_id }}" 
+
+
+    - name: Create SG
+      ec2_group:
+         name: ansible_sg
+         description: AWS SG 
+         vpc_id: "{{ ansible_vpc.vpc.id }}"
+         region: "{{ region }}"
+         aws_access_key: "{{ ec2_access_key }}"
+         aws_secret_key: "{{ ec2_secret_key }}"
+         rules:
+           - proto: tcp
+             ports: 
+                 - 22
+             cidr_ip: 0.0.0.0/0
+             rule_desc: Allow ssh access 
+
+    - name: provision ec2 instance
+      ec2:
+        region: "{{ region }}"
+        aws_access_key: "{{ ec2_access_key }}"
+        aws_secret_key: "{{ ec2_secret_key }}"
+        key_name: manual_keyPair
+        instance_type: t2.micro
+        image: ami-08f3d892de259504d
+        wait: yes
+        group: ansible_sg 
+        count: 1
+        vpc_subnet_id: "{{ ansible_subnet.subnet.id }}"
+        assign_public_ip: yes
+      register: ansible_instance
+ 
+    - name: Display instance public IP
+      debug:
+        msg: "{{ ansible_instance.instances[0].public_ip }}"
